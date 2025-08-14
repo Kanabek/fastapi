@@ -1,16 +1,13 @@
-from fastapi import FastAPI
-
+from fastapi import FastAPI, HTTPException
+from typing import Optional, List
+from pydantic import BaseModel
 app = FastAPI()
 
 
-@app.get("/")
-async def home() -> dict[str,str]:
-    return {"data":"message"}
-
-
-@app.get("/contacts")
-async def contacts() -> int:
-    return 34
+class Post(BaseModel):
+    id: int
+    title: str
+    body: str
 
 
 posts = [
@@ -21,10 +18,24 @@ posts = [
 
 
 @app.get("/items")
-async def get_items() -> list[dict]:
-    return posts
+async def items() -> List[Post]:
+    return [Post(**post) for post in posts]
 
 
 @app.get("/items/{id}")
-async def get_items_by_id(id: int) -> list[dict]:
-    return posts
+async def items(id: int) -> dict:
+    for post in posts:
+        if post['id'] == id:
+            return post
+    raise HTTPException(status_code=404, detail="Post not found")
+
+@app.get("/search")
+async def search(post_id: Optional[int] = None):
+    if post_id:
+        for post in posts:
+            if post['id'] == post_id:
+                return post
+        raise HTTPException(status_code=404, detail="Post not found")
+    else:
+        return {"data":"No post id provided"}
+
